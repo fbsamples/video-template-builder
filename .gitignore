@@ -1,0 +1,11 @@
+# .gitignore
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+# Virtual Environments
+.env
+.venv
+env/
+venv/
+*.mp4
