@@ -47,7 +47,7 @@ class MarginCombinator(Source):
         i = self.margin_left
         j = self.margin_top
 
-        if bg_shape[0] < front_shape[0] + i or bg_shape[1] < front_shape[1] + j:
+        if bg_shape[0] < front_shape[0] + j or bg_shape[1] < front_shape[1] + i:
             raise ValueError("Margin would exceed the size of the background image.")
 
         bg_image[j:j+ front_image.shape[0], i:i+front_image.shape[1]] = front_image
