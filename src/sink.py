@@ -58,7 +58,9 @@ class Sink():
         time = self.time
 
         img = source.next_frame()
-        vw = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'mp4v'), target_fps, img.shape[:2])
+        height, width = img.shape[:2]
+        
+        vw = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'mp4v'), target_fps, (width, height))
 
         for fr in range(time * target_fps):
             vw.write(img)
