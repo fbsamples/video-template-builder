@@ -5,6 +5,7 @@
 
 import cv2
 import numpy as np
+import platform, os
 
 class Source:
 
@@ -29,6 +30,7 @@ class SingleMediaSource(Source):
     def __init__(self, video_path, resolution=(720, 720), target_fps=None, on_end_loop=True):
         """
         The constructor for SingleMediaSource class.
+
         Parameters:
             video_path (str): Path to the video or image file.
             resolution (tuple): The desired resolution to which the asset is rescaled. Default is (720, 720).
@@ -36,37 +38,53 @@ class SingleMediaSource(Source):
             on_end_loop (bool): If True, loops the video from the beginning when it ends. If False, freezes on the last frame. Default is True.
         """
         super().__init__()
-        self.cap = cv2.VideoCapture(video_path)
-        self.source_fps = self.cap.get(cv2.CAP_PROP_FPS)
+
+        # Windows fix: OpenCV does not support reading images with alpha channel on Windows using VideoCapture.
+        if platform.system() == "Windows" and self._is_image_with_alpha(video_path):
+            self.cap = None  # Don't use VideoCapture for images on Windows
+            self.frame = cv2.imread(video_path, cv2.IMREAD_COLOR)  # Read without alpha channel
+        else:
+            self.cap = cv2.VideoCapture(video_path)
+            self.source_fps = self.cap.get(cv2.CAP_PROP_FPS)
+
         self.target_fps = target_fps
-        self.fps_factor = 1 if target_fps is None else int(self.target_fps / self.source_fps)
+        self.fps_factor = 1 if target_fps is None else int(target_fps / self.source_fps) if self.cap is not None else 1
         self.resolution = resolution
         self.count = 0
         self.last_frame = None
         self.ret = True
         self.on_end_loop = on_end_loop
 
-
     def next_frame(self):
         """
-            Adjusts the frame rate of the video to the desired fps and returns the next frame in the source.
+        Adjusts the frame rate of the video to the desired fps and returns the next frame in the source.
         """
 
         if self.count % self.fps_factor != 0:
             self.count += 1
             return self.last_frame
 
-        ret, frame = self.cap.read()
-
-        if ret:
-            self.last_frame = frame
-        elif self.cap.get(cv2.CAP_PROP_FRAME_COUNT) > 1 and self.on_end_loop:
-            self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-            _, self.last_frame = self.cap.read()
+        if self.cap is not None:
+            ret, frame = self.cap.read()
+            if ret:
+                self.last_frame = frame
+            elif self.cap.get(cv2.CAP_PROP_FRAME_COUNT) > 1 and self.on_end_loop:
+                self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                _, self.last_frame = self.cap.read()
+        else:
+            # Use the loaded image for non-Windows or non-image-with-alpha cases
+            self.last_frame = self.frame
 
         self.count += 1
         self.last_frame = cv2.resize(self.last_frame, self.resolution)
         return self.last_frame
+
+    def _is_image_with_alpha(self, path):
+        """
+        Checks if the file at the given path is an image with an alpha channel (PNG).
+        """
+        _, ext = os.path.splitext(path)
+        return ext.lower() == ".png"  # Check for PNG extension
 
 
 class ImageSlideshowSource(Source):
