@@ -9,13 +9,17 @@ import platform, os
 
 class Source:
 
-    def next_frame():
+    def next_frame(self):
         """
         Computes as necessary and returns the next frame in the source.
 
         Returns:
             np.ndarray: The next frame in the source as an array with shape (height, width, color_channel)
         """
+        frame = self._next_frame()
+        return cv2.cvtColor(frame, cv2.COLOR_BGR2BGRA) if frame.shape[2] == 3 else frame
+
+    def _next_frame(self):
         pass
 
 
@@ -39,23 +43,24 @@ class SingleMediaSource(Source):
         """
         super().__init__()
 
-        # Windows fix: OpenCV does not support reading images with alpha channel on Windows using VideoCapture.
-        if platform.system() == "Windows" and self._is_image_with_alpha(video_path):
-            self.cap = None  # Don't use VideoCapture for images on Windows
-            self.frame = cv2.imread(video_path, cv2.IMREAD_COLOR)  # Read without alpha channel
+        # Don't use VideoCapture for all images with alpha channel
+        if self._is_image_with_alpha(video_path):
+            self.cap = None
+            self.fps_factor = 1
+            self.last_frame = cv2.imread(video_path, cv2.IMREAD_UNCHANGED)
         else:
             self.cap = cv2.VideoCapture(video_path)
             self.source_fps = self.cap.get(cv2.CAP_PROP_FPS)
+            self.fps_factor = 1 if target_fps is None else int(target_fps / self.source_fps)
+            self.last_frame = None
 
         self.target_fps = target_fps
-        self.fps_factor = 1 if target_fps is None else int(target_fps / self.source_fps) if self.cap is not None else 1
         self.resolution = resolution
         self.count = 0
-        self.last_frame = None
         self.ret = True
         self.on_end_loop = on_end_loop
 
-    def next_frame(self):
+    def _next_frame(self):
         """
         Adjusts the frame rate of the video to the desired fps and returns the next frame in the source.
         """
@@ -71,12 +76,10 @@ class SingleMediaSource(Source):
             elif self.cap.get(cv2.CAP_PROP_FRAME_COUNT) > 1 and self.on_end_loop:
                 self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                 _, self.last_frame = self.cap.read()
-        else:
-            # Use the loaded image for non-Windows or non-image-with-alpha cases
-            self.last_frame = self.frame
 
         self.count += 1
         self.last_frame = cv2.resize(self.last_frame, self.resolution)
+
         return self.last_frame
 
     def _is_image_with_alpha(self, path):
@@ -109,7 +112,7 @@ class ImageSlideshowSource(Source):
             min_time (int): The minimum time for the slideshow in seconds. Default is 15.
         """
         super().__init__()
-        self.imgs = [cv2.imread(path) for path in img_paths]
+        self.imgs = [cv2.imread(path, cv2.IMREAD_UNCHANGED) for path in img_paths]
         self.imgs = [cv2.resize(img, dimensions) for img in self.imgs]
 
         expected_imgs = 1 + int(min_time / (standby_time+transition_time))
@@ -154,7 +157,7 @@ class ImageSlideshowSource(Source):
         res[:, img1.shape[1]-cut:] = img2[:, :cut]
         return res
 
-    def next_frame(self):
+    def _next_frame(self):
         """
         Returns the next frame in the slideshow.
         This method handles the transitions between images and the standby time for each image.
@@ -177,6 +180,8 @@ class ImageSlideshowSource(Source):
 
         if self.is_transitioning and self.next_img_idx < len(self.imgs) - 1:
             alpha = self.state_count / (self.transition_time * self.target_fps)
-            return ImageSlideshowSource._left_transition(self.imgs[self.next_img_idx], self.imgs[self.next_img_idx + 1], alpha)
+            frame = ImageSlideshowSource._left_transition(self.imgs[self.next_img_idx], self.imgs[self.next_img_idx + 1], alpha)
         else:
-            return self.imgs[self.next_img_idx]
+            frame = self.imgs[self.next_img_idx]
+
+        return frame

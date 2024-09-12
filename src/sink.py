@@ -69,7 +69,7 @@ class Sink():
             raise Exception("OpenCV cannot recognize the codec used by the temporary video.")
 
         for fr in range(time * target_fps):
-            vw.write(img)
+            vw.write(cv2.cvtColor(img, cv2.COLOR_BGRA2BGR))
             img = source.next_frame()
 
         vw.release()
