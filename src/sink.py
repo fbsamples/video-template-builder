@@ -3,7 +3,10 @@
 #  This source code is licensed under the license found in the
 #  LICENSE file in the root directory of this source tree.
 
-import source, cv2
+import cv2
+import os
+import source
+from tempfile import gettempdir
 from moviepy.editor import VideoFileClip, AudioFileClip
 
 class Sink():
@@ -11,9 +14,9 @@ class Sink():
     A class to create a video from a source and add audio if provided.
     """
 
-    TEMP_FILE = ""
+    TEMP_FILE = os.path.join(gettempdir(), "tmp.mp4")
 
-    def __init__(self, source: source.Source, target_fps=60, time=15, output_video_path="sample.mp4", temp_file_path=""):
+    def __init__(self, source: source.Source, target_fps=60, time=15, output_video_path="sample.mp4"):
         """
         Initializes the Sink class with the source, target fps, time, and output video path.
         Args:
@@ -26,8 +29,6 @@ class Sink():
         self.target_fps = target_fps
         self.time = time
         self.output_video_path = output_video_path
-        
-        Sink.TEMP_FILE = temp_file_path
 
     def _add_audio(self, audio_path):
         """
