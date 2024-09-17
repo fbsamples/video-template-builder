@@ -41,7 +41,7 @@ slideshow_source = ImageSlideshowSource(
     standby_time=3,             # Time a full image is shown
     transition_time=1,          # Time it takes to complete transition
     target_fps=60,              # Target frames per second
-    left_bound_white=True,      # Start with a white image
+    left_bound_white=False,     # Start with a white image
     right_bound_white=False,
     min_time = 15               # Loop through images until 15s is reached - TODO: check
 )

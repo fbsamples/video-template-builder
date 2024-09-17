@@ -4,7 +4,7 @@
 #  LICENSE file in the root directory of this source tree.
 
 from source import Source
-
+import cv2
 
 class MarginCombinator(Source):
     """
@@ -50,10 +50,27 @@ class MarginCombinator(Source):
         if bg_shape[0] < fg_shape[0] + j or bg_shape[1] < fg_shape[1] + i:
             raise ValueError("Margin would exceed the size of the background image.")
 
-        bg_image[j:j+ fg_image.shape[0], i:i+fg_image.shape[1]] = fg_image
+        fg_alpha = fg_image[:,:,3]
+
+        bg = bg_image[j:j+ fg_image.shape[0], i:i+fg_image.shape[1]]
+        bg = bg.astype(float)
+
+        fg_alpha = fg_alpha.astype(float)/256
+        fg = fg_image.astype(float)
+
+        for l in range(3):
+            fg[:,:,l] = cv2.multiply(fg_alpha, fg[:,:,l])
+            bg[:,:,l] = cv2.multiply(1 - fg_alpha, bg[:,:,l])
+
+
+        fg = fg.astype('uint8')
+        bg = bg.astype('uint8')
+
+        bg_image[j:j+ fg_image.shape[0], i:i+fg_image.shape[1]] = cv2.add(bg, fg)
         return bg_image
 
     def next_frame(self):
-        bg_image = self.bg_source.next_frame()
+        bg_image = self.bg_source.next_frame().copy()
         fg_image = self.fg_source.next_frame()
-        return self.combine(bg_image, fg_image)
+        frame = self.combine(bg_image, fg_image)
+        return frame

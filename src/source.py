@@ -23,6 +23,10 @@ class Source:
         pass
 
 
+    def _known_image_extension(video_path):
+        valid_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp'}
+        return any(video_path.lower().endswith(ext) for ext in valid_extensions)
+
 
 class SingleMediaSource(Source):
     """
@@ -42,19 +46,21 @@ class SingleMediaSource(Source):
             on_end_loop (bool): If True, loops the video from the beginning when it ends. If False, freezes on the last frame. Default is True.
         """
         super().__init__()
-
-        # Don't use VideoCapture for all images with alpha channel
-        if self._is_image_with_alpha(video_path):
+        self.target_fps = target_fps
+        if Source._known_image_extension(video_path):
             self.cap = None
+            self.source_fps = target_fps
+            self.target_fpa = target_fps
             self.fps_factor = 1
             self.last_frame = cv2.imread(video_path, cv2.IMREAD_UNCHANGED)
+            self.last_frame = cv2.resize(self.last_frame, resolution)
         else:
             self.cap = cv2.VideoCapture(video_path)
             self.source_fps = self.cap.get(cv2.CAP_PROP_FPS)
-            self.fps_factor = 1 if target_fps is None else int(target_fps / self.source_fps)
+            self.target_fps = target_fps
+            self.fps_factor = 1 if target_fps is None else int(self.target_fps / self.source_fps)
             self.last_frame = None
 
-        self.target_fps = target_fps
         self.resolution = resolution
         self.count = 0
         self.ret = True
@@ -65,12 +71,13 @@ class SingleMediaSource(Source):
         Adjusts the frame rate of the video to the desired fps and returns the next frame in the source.
         """
 
-        if self.count % self.fps_factor != 0:
-            self.count += 1
-            return self.last_frame
+        if self.cap:
+            if self.count % self.fps_factor != 0:
+                self.count += 1
+                return self.last_frame
 
-        if self.cap is not None:
             ret, frame = self.cap.read()
+
             if ret:
                 self.last_frame = frame
             elif self.cap.get(cv2.CAP_PROP_FRAME_COUNT) > 1 and self.on_end_loop:
@@ -81,14 +88,6 @@ class SingleMediaSource(Source):
             self.last_frame = cv2.resize(self.last_frame, self.resolution)
 
         return self.last_frame
-
-    def _is_image_with_alpha(self, path):
-        """
-        Checks if the file at the given path is an image with an alpha channel (PNG).
-        """
-        _, ext = os.path.splitext(path)
-        return ext.lower() == ".png"  # Check for PNG extension
-
 
 class ImageSlideshowSource(Source):
 
