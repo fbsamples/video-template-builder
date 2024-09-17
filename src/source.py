@@ -77,8 +77,8 @@ class SingleMediaSource(Source):
                 self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                 _, self.last_frame = self.cap.read()
 
-        self.count += 1
-        self.last_frame = cv2.resize(self.last_frame, self.resolution)
+            self.count += 1
+            self.last_frame = cv2.resize(self.last_frame, self.resolution)
 
         return self.last_frame
 

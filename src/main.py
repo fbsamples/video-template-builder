@@ -59,7 +59,7 @@ bg_source = SingleMediaSource(
 # Combine the two of them with a margin combinator to create a new source.
 combinator_source = MarginCombinator(
     bg_source = bg_source,
-    front_source = slideshow_source,
+    fg_source = slideshow_source,
     margin_top = 60,
     margin_left = 85
 )
