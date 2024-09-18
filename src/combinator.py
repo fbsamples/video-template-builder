@@ -4,6 +4,7 @@
 #  LICENSE file in the root directory of this source tree.
 
 import cv2
+import numpy as np
 from source import Source, Blending
 
 class MarginCombinator(Source):
@@ -69,7 +70,27 @@ class MarginCombinator(Source):
 
             bg_image[j:j+ fg_image.shape[0], i:i+fg_image.shape[1]] = cv2.add(bg, fg)
         elif self.blending == Blending.CHROMA_KEYING:
-            pass
+            hsv = cv2.cvtColor(fg_image, cv2.COLOR_BGR2HSV)
+            h,s,v = cv2.split(hsv)
+
+            unique_colors, counts = np.unique(s, return_counts=True)
+
+            chroma_color = None
+            most_common = -1
+            for a in range(len(unique_colors)):
+                if counts[a] > most_common:
+                    most_common = counts[a]
+                    chroma_color = int(unique_colors[a])
+
+            margin = 10
+            mask = cv2.inRange(s, chroma_color - margin, chroma_color + margin)
+
+            kernel = np.ones((3,3), np.uint8)
+            mask = cv2.dilate(mask, kernel, iterations = 1)
+            mask = cv2.medianBlur(mask, 5)
+            mask = cv2.bitwise_not(mask)
+
+            bg_image[j:j+fg_image.shape[0], i:i+fg_image.shape[1]][mask==255] = fg_image[mask==255]
         else:
             bg_image[j:j+ fg_image.shape[0], i:i+fg_image.shape[1]] = fg_image
         return bg_image
