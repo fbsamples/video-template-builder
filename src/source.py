@@ -6,8 +6,18 @@
 import cv2
 import numpy as np
 import platform, os
+from enum import Enum
+
+class Blending(Enum):
+    """
+    This class serves as a list of strategies for blending images
+    """
+    ALPHA=0
+    CHROMA_KEYING=1
 
 class Source:
+    def blending_strategy(self):
+        return self.blending
 
     def next_frame(self):
         """
@@ -22,7 +32,6 @@ class Source:
     def _next_frame(self):
         pass
 
-
     def _known_image_extension(video_path):
         valid_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp'}
         return any(video_path.lower().endswith(ext) for ext in valid_extensions)
@@ -35,7 +44,7 @@ class SingleMediaSource(Source):
     It also provides an option to loop the video from the beginning or freeze on the last frame when it ends.
     """
 
-    def __init__(self, video_path, resolution=(720, 720), target_fps=None, on_end_loop=True):
+    def __init__(self, video_path, resolution=(720, 720), target_fps=None, on_end_loop=True, blending=None):
         """
         The constructor for SingleMediaSource class.
 
@@ -44,6 +53,7 @@ class SingleMediaSource(Source):
             resolution (tuple): The desired resolution to which the asset is rescaled. Default is (720, 720).
             target_fps (int): The desired frames per second for video assets. Default is 60.
             on_end_loop (bool): If True, loops the video from the beginning when it ends. If False, freezes on the last frame. Default is True.
+            blending (Blending): The strategy for blending this source into the background. Options are: None, ALPHA and CHROMA_KEYING. Default is None.
         """
         super().__init__()
         self.target_fps = target_fps
@@ -65,6 +75,7 @@ class SingleMediaSource(Source):
         self.count = 0
         self.ret = True
         self.on_end_loop = on_end_loop
+        self.blending = blending
 
     def _next_frame(self):
         """
@@ -97,7 +108,7 @@ class ImageSlideshowSource(Source):
     It allows for setting the standby time for each image, the transition time between images, and the target frames per second.
     """
 
-    def __init__(self, img_paths, dimensions=(550, 550), standby_time=3, transition_time=1, target_fps=60, left_bound_white=True, right_bound_white=False, min_time = 15):
+    def __init__(self, img_paths, dimensions=(550, 550), standby_time=3, transition_time=1, target_fps=60, left_bound_white=True, right_bound_white=False, min_time = 15, blending = None):
         """
         The constructor for ImageSlideshowSource class.
         Parameters:
@@ -109,6 +120,7 @@ class ImageSlideshowSource(Source):
             left_bound_white (bool): If True, starts the slideshow with a white image. Default is True.
             right_bound_white (bool): If True, ends the slideshow with a white image. Default is False.
             min_time (int): The minimum time for the slideshow in seconds. Default is 15.
+            blending (Blending): The strategy for blending the images into the background. Options are NONE, ALPHA and CHROMA_KEYING. Default is NONE.
         """
         super().__init__()
         self.imgs = [cv2.imread(path, cv2.IMREAD_UNCHANGED) for path in img_paths]
@@ -118,6 +130,7 @@ class ImageSlideshowSource(Source):
 
         self.imgs = [self.imgs[i % len(self.imgs)] for i in range(expected_imgs)]
 
+        self.blending = blending
         self.standby_time = standby_time
         self.transition_time = transition_time
         self.target_fps = target_fps

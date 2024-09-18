@@ -43,7 +43,8 @@ slideshow_source = ImageSlideshowSource(
     target_fps=60,              # Target frames per second
     left_bound_white=False,     # Start with a white image
     right_bound_white=False,
-    min_time = 15               # Loop through images until 15s is reached - TODO: check
+    min_time = 15,              # Loop through images until 15s is reached - TODO: check
+    blending = Blending.ALPHA
 )
 
 
