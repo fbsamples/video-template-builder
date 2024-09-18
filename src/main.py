@@ -21,15 +21,18 @@ def download(url, file_name_no_ext):
 
 
 # Fetch some generic images from the internet and store them as local files
-# on /tmp directory.
+# on temporary directory.
 fb_logo = "https://static.xx.fbcdn.net/rsrc.php/v3/y0/r/eFZD1KABzRA.png"
 ig_logo = "https://static.cdninstagram.com/rsrc.php/v3/yM/r/7xwrlYffOBb.png"
 
 image_urls = [fb_logo, ig_logo]
 image_paths = []
 
+# Declare temporary pathname depending on running OS.
+temp_path = "/tmp" if os.name == 'posix' else f"{os.path.expanduser("~")}/AppData/Local/Temp"
+
 for i, url in enumerate(image_urls):
-    file_name = download(url, f"/tmp/{i}")
+    file_name = download(url, f"{temp_path}/{i}")
     image_paths.append(file_name)
 
 # Create a new source that will slide through these images
@@ -48,7 +51,7 @@ slideshow_source = ImageSlideshowSource(
 
 # Now we will configure a larger WhatsApp logo to be used as background.
 wa_logo = "https://static.whatsapp.net/rsrc.php/v3/yP/r/rYZqPCBaG70.png"
-wa_image_path = download(wa_logo, "/tmp/bg")
+wa_image_path = download(wa_logo, f"{temp_path}/bg_0")
 
 bg_source = SingleMediaSource(
     wa_image_path,
@@ -64,15 +67,20 @@ combinator_source = MarginCombinator(
 )
 
 
-# Download an audio file from Meta's Sound Collection
-audio_url = "https://scontent.faep8-2.fna.fbcdn.net/v/t39.12897-6/406204921_873681674389419_4350045728225354598_n.wav/Bling-Reels-Sound-Listicle.wav?_nc_cat=108&ccb=1-7&_nc_sid=c2de2f&_nc_ohc=BYS1Nl_5SSMAb519o5h&_nc_ht=scontent.faep8-2.fna&oh=00_AfCMXJ8LklE5_tjeglEy_ScNQX3sGWw95ac-3n4xU2hjnw&oe=662C6FB6&dl=1"
-audio_path = download(audio_url, "/tmp/audio")
+# Use a sample audio file from Meta's Audio Collection.
+audio_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'sample-audio.wav')
 
-# Create a new video with the source and save it to /tmp directory.
+# If you wish to download an audio file off the internet instead, uncomment the following lines and comment out the one above.
+# audio_url = "https://www.sample-videos.com/audio/mp3/crowd-cheering.mp3"
+# audio_path = download(audio_url, f"{temp_path}/audio")
+
+# Create a new video with the source and save it to temporary directory.
 sink = Sink(
     source=combinator_source,
     target_fps=60,
     time=20,
-    output_video_path="sample.mp4"
+    output_video_path="sample.mp4",
+    temp_file_path=f"{temp_path}/tmp.mp4"
 )
+
 sink.create_video(audio_path)

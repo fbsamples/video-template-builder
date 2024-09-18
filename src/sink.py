@@ -11,9 +11,9 @@ class Sink():
     A class to create a video from a source and add audio if provided.
     """
 
-    TEMP_FILE = "/tmp/tmp.mp4"
+    TEMP_FILE = ""
 
-    def __init__(self, source: source.Source, target_fps=60, time=15, output_video_path="sample.mp4"):
+    def __init__(self, source: source.Source, target_fps=60, time=15, output_video_path="sample.mp4", temp_file_path=""):
         """
         Initializes the Sink class with the source, target fps, time, and output video path.
         Args:
@@ -26,6 +26,8 @@ class Sink():
         self.target_fps = target_fps
         self.time = time
         self.output_video_path = output_video_path
+        
+        Sink.TEMP_FILE = temp_file_path
 
     def _add_audio(self, audio_path):
         """
@@ -61,6 +63,9 @@ class Sink():
         height, width = img.shape[:2]
         
         vw = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'mp4v'), target_fps, (width, height))
+
+        if not vw.isOpened():
+            raise Exception("OpenCV cannot recognize the codec used by the temporary video.")
 
         for fr in range(time * target_fps):
             vw.write(img)
