@@ -14,7 +14,7 @@ class StrobeSource(Source):
         if self.source.blending_strategy() != Blending.ALPHA and source.blending_strategy() != None:
             print("Strobing requires Alpha Blending")
 
-        self.min_scale = min(min_scale, 0.01)
+        self.min_scale = max(0.01, min(min_scale, 1))
         self.scale = start_scale if start_scale >= 0 and start_scale < 1 else 1
         self.speed = max(0.001, min(abs(start_speed), 0.1))
         self.direction = -1 if start_direction < 0 else 1
@@ -37,7 +37,7 @@ class StrobeSource(Source):
 
         self.scale = max(self.min_scale, min(self.scale + (self.direction * self.speed), 1))
 
-        frame = self.source.next_frame().copy()
+        frame = self.source.next_frame()
         reduced = cv2.resize(frame, (0,0), fx=self.scale, fy=self.scale)
 
         margin = (0,0) if not self.centered else ((
