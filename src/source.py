@@ -29,6 +29,9 @@ class Source:
         frame = self._next_frame()
         return cv2.cvtColor(frame, cv2.COLOR_BGR2BGRA) if frame.shape[2] == 3 else frame
 
+    def reset(self, producst):
+        pass
+
     def _next_frame(self):
         pass
 
@@ -77,6 +80,12 @@ class SingleMediaSource(Source):
         self.on_end_loop = on_end_loop
         self.blending = blending
 
+    def reset(self, products):
+        if self.cap != None:
+            self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            self.count = 0
+            self.last_frame = None
+
     def _next_frame(self):
         """
         Adjusts the frame rate of the video to the desired fps and returns the next frame in the source.
@@ -123,26 +132,36 @@ class ImageSlideshowSource(Source):
             blending (Blending): The strategy for blending the images into the background. Options are NONE, ALPHA and CHROMA_KEYING. Default is NONE.
         """
         super().__init__()
-        self.imgs = [cv2.imread(path, cv2.IMREAD_UNCHANGED) for path in img_paths]
-        self.imgs = [cv2.resize(img, dimensions) for img in self.imgs]
-
-        expected_imgs = 1 + int(min_time / (standby_time+transition_time))
-
-        self.imgs = [self.imgs[i % len(self.imgs)] for i in range(expected_imgs)]
-
         self.blending = blending
+        self.dimensions = dimensions
+        self.min_time = min_time
         self.standby_time = standby_time
         self.transition_time = transition_time
         self.target_fps = target_fps
         self.count = 0
         self.next_img_idx = 0
 
+        self.left_bound_white = left_bound_white
+        self.right_bound_white = right_bound_white
+
+        if img_paths == None:
+            self.imgs = None
+        else:
+            self.reset(img_paths)
+
+    def reset(self, products):
+        self.imgs = [cv2.imread(path, cv2.IMREAD_UNCHANGED) for path in products]
+        self.imgs = [cv2.resize(img, self.dimensions) for img in self.imgs]
+
+        expected_imgs = 1 + int(self.min_time / (self.standby_time+self.transition_time))
+
+        self.imgs = [self.imgs[i % len(self.imgs)] for i in range(expected_imgs)]
         white_img = np.ones_like(self.imgs[0]) * 255
 
-        if left_bound_white:
+        if self.left_bound_white:
             self.imgs = [white_img] + self.imgs
 
-        if right_bound_white:
+        if self.right_bound_white:
             self.imgs = self.imgs + [white_img]
 
         self.is_transitioning = True
@@ -174,6 +193,8 @@ class ImageSlideshowSource(Source):
         Returns the next frame in the slideshow.
         This method handles the transitions between images and the standby time for each image.
         """
+        if self.imgs == None:
+            raise ValueError("No Images Set")
 
         # Simple state machine to control the transition between images
         if self.is_transitioning and self.state_count == self.transition_time * self.target_fps:

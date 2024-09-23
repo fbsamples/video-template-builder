@@ -16,14 +16,21 @@ class StrobeSource(Source):
 
         self.min_scale = max(0.01, min(min_scale, 1))
         self.scale = start_scale if start_scale >= 0 and start_scale < 1 else 1
-        self.speed = max(0.001, min(abs(start_speed), 0.1))
+        self.speed = max(0.0001, min(abs(start_speed), 0.1))
         self.direction = -1 if start_direction < 0 else 1
         self.centered = centered
         self.on_end_loop = on_end_loop
         self.last_frame = None
 
+        self.starting_params = (self.scale, self.speed, self.direction)
+
     def blending_strategy(self):
         return Blending.ALPHA
+
+    def reset(self, products):
+        self.source.reset(products)
+        self.scale, self.speed, self.direction = self.starting_params
+        self.last_frame = None
 
     def next_frame(self):
         if self.direction == 0:

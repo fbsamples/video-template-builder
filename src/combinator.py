@@ -31,6 +31,10 @@ class MarginCombinator(Source):
         self.margin_left = margin_left
         self.blending = self.fg_source.blending_strategy()
 
+    def reset(self, products):
+        self.bg_source.reset(products)
+        self.fg_source.reset(products)
+
     def combine(self, bg_image, fg_image):
         """
         Combines the background and product images with the specified margins.

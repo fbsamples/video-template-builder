@@ -5,6 +5,7 @@
 
 from source import Source
 from functools import reduce
+from combinator import MarginCombinator
 
 class Controller(Source):
     """
@@ -22,31 +23,56 @@ class Controller(Source):
             self.source = source
             self.duration = duration
 
-    def __init__(self, phases):
+    def __init__(self):
         """
         The constructor for Controller class.
 
         Parameters:
             phases (list of Phase): A list of all objects that should be connected in sequence and their duration
         """
-        self.phases = phases
-
-        self.iterator = iter(self.phases)
-        self.current = next(self.iterator)
+        self.phases = []
+        self.iterator = None
+        self.current = None
         self.current_count = 0
-        self.current_end = self.current.duration
 
         self.last_frame = None
 
         self.frame_count = 0
-        self.frame_total = reduce(lambda a, b: a.duration + b.duration, self.phases)
+        self.frame_total = 0
+
+    def add_phase(self, source, duration):
+        self.phases.append(
+            Controller.Phase(
+                source,
+                0 if duration == None or duration < 0 else duration
+            )
+        )
+        self.frame_total += duration
+
+    def duration(self):
+        return self.frame_total
+
+    def reset(self, products):
+        for phase in self.phases:
+            phase.source.reset(products)
+
+        self.iterator = None
+        self.current = None
+        self.current_count = 0
+        self.last_frame = None
+        self.frame_count = 0
 
     def next_frame(self):
         if self.frame_count == self.frame_total:
             return self.last_frame
 
-        if self.current_count == self.current.duration:
+        if self.iterator == None:
+            self.iterator = iter(self.phases)
+
+        if self.current == None or self.current_count == self.current.duration:
             self.current = next(self.iterator)
+            #while self.current.source == None:
+            #    self.current = next(self.iterator)
             self.current_count = 0
             self.current_end = self.current.duration
         else:
