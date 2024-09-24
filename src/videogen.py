@@ -104,6 +104,7 @@ class Video:
                     output_video_path=product)
             sink.create_video(self.audio)
             i += 1
+        print("5. Done")
 
     def _parseRow(self, row):
         phase = self._parseInt(row, 'Phase')
