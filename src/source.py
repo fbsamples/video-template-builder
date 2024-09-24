@@ -152,6 +152,7 @@ class ImageSlideshowSource(Source):
     def reset(self, products):
         self.imgs = [cv2.imread(path, cv2.IMREAD_UNCHANGED) for path in products]
         self.imgs = [cv2.resize(img, self.dimensions) for img in self.imgs]
+        self.imgs = [(cv2.cvtColor(img, cv2.COLOR_BGR2BGRA) if img.shape[2] == 3 else img) for img in self.imgs]
 
         expected_imgs = 1 + int(self.min_time / (self.standby_time+self.transition_time))
         if not self.on_end_loop:
