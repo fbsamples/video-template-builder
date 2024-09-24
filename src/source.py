@@ -139,7 +139,6 @@ class ImageSlideshowSource(Source):
         self.transition_time = transition_time
         self.target_fps = target_fps
         self.count = 0
-        self.next_img_idx = 0
 
         self.left_bound_white = left_bound_white
         self.right_bound_white = right_bound_white
@@ -166,7 +165,7 @@ class ImageSlideshowSource(Source):
 
         self.is_transitioning = True
         self.state_count = 0
-
+        self.next_img_idx = 0
 
     def _left_transition(img1, img2, alpha):
         """
