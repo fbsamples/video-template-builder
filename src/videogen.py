@@ -361,7 +361,7 @@ class Video:
             if len(files) > 0:
                 for file in files:
                     f = join(path, file)
-                    if f.startswith('.') or not isfile(f):
+                    if file.startswith('.') or not isfile(f):
                         continue
                     if output in products:
                         products[output].append(f)
