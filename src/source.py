@@ -117,7 +117,7 @@ class ImageSlideshowSource(Source):
     It allows for setting the standby time for each image, the transition time between images, and the target frames per second.
     """
 
-    def __init__(self, img_paths, dimensions=(550, 550), standby_time=3, transition_time=1, target_fps=60, left_bound_white=True, right_bound_white=False, min_time = 15, blending = None):
+    def __init__(self, img_paths, dimensions=(550, 550), standby_time=3, transition_time=1, target_fps=60, left_bound_white=True, right_bound_white=False, min_time = 15, blending = None, on_end_loop = False):
         """
         The constructor for ImageSlideshowSource class.
         Parameters:
@@ -137,6 +137,7 @@ class ImageSlideshowSource(Source):
         self.min_time = min_time
         self.standby_time = standby_time
         self.transition_time = transition_time
+        self.on_end_loop = on_end_loop
         self.target_fps = target_fps
         self.count = 0
 
@@ -153,6 +154,8 @@ class ImageSlideshowSource(Source):
         self.imgs = [cv2.resize(img, self.dimensions) for img in self.imgs]
 
         expected_imgs = 1 + int(self.min_time / (self.standby_time+self.transition_time))
+        if not self.on_end_loop:
+            expected_imgs = min(len(self.imgs), expected_imgs)
 
         self.imgs = [self.imgs[i % len(self.imgs)] for i in range(expected_imgs)]
         white_img = np.ones_like(self.imgs[0]) * 255
