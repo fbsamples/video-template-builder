@@ -1,6 +1,6 @@
 import csv
 from os import listdir
-from os.path import exists, isdir, join
+from os.path import exists, isdir, isfile, join
 from sys import argv
 from combinator import MarginCombinator
 from controller import Controller
@@ -359,7 +359,14 @@ class Video:
 
             files = listdir(join(self.product_directory,product))
             if len(files) > 0:
-                products[output] = [join(path,file) for file in files]
+                for file in files:
+                    f = join(path, file)
+                    if f.startswith('.') or not isfile(f):
+                        continue
+                    if output in products:
+                        products[output].append(f)
+                    else:
+                        products[output] = [f]
         return products
 
 
