@@ -83,7 +83,6 @@ class SingleMediaSource(Source):
                     frame = frame.to_ndarray()
                 self.frames.append(frame)
             self.total_frames = video_stream.frames
-            self.current_frame = 0
             self.source_fps =  int(video_stream.average_rate)
             self.target_fps = target_fps
             self.fps_factor = 1 if target_fps is None else int(self.target_fps / self.source_fps)
@@ -97,7 +96,6 @@ class SingleMediaSource(Source):
 
     def reset(self, products):
         if self.container != None:
-            self.current_frame = 0
             self.count = 0
             self.last_frame = None
 
@@ -111,13 +109,11 @@ class SingleMediaSource(Source):
                 self.count += 1
                 return self.last_frame
 
-            frame = self.frames[self.current_frame]
-            self.current_frame += 1
-
-            if self.current_frame > self.total_frames and self.on_end_loop:
-                self.current_frame = 0
+            if self.count >= self.total_frames and self.on_end_loop:
+                self.count = 0
                 self.last_frame = self.frames[0]
-            elif self.current_frame <= self.total_frames:
+            elif self.count < self.total_frames:
+                frame = self.frames[self.count]
                 self.last_frame = frame
 
             self.count += 1

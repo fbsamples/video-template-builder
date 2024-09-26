@@ -56,13 +56,6 @@ class MarginCombinator(Source):
             raise ValueError("Margin would exceed the size of the background image.")
 
         if self.blending == Blending.ALPHA:
-            newimg = fg_image.copy()
-            newimg[:,:,3] = 255
-
-            cv2.imshow('rgb', newimg)
-            cv2.imshow('a', fg_image[:,:,3])
-            cv2.waitKey(0)
-
             fg_alpha = fg_image[:,:,3]
 
             bg = bg_image[j:j+ fg_image.shape[0], i:i+fg_image.shape[1]]
