@@ -3,6 +3,7 @@
 #  This source code is licensed under the license found in the
 #  LICENSE file in the root directory of this source tree.
 
+import av
 import cv2
 import numpy as np
 import platform, os
@@ -61,15 +62,29 @@ class SingleMediaSource(Source):
         super().__init__()
         self.target_fps = target_fps
         if Source._known_image_extension(video_path):
-            self.cap = None
+            self.container = None
             self.source_fps = target_fps
             self.target_fpa = target_fps
             self.fps_factor = 1
             self.last_frame = cv2.imread(video_path, cv2.IMREAD_UNCHANGED)
             self.last_frame = cv2.resize(self.last_frame, resolution)
         else:
-            self.cap = cv2.VideoCapture(video_path)
-            self.source_fps = self.cap.get(cv2.CAP_PROP_FPS)
+            self.container = av.open(video_path)
+            video_stream = self.container.streams.video[0]
+
+            self.frames = []
+            for frame in self.container.decode(video=0):
+                if frame.format.name != 'argb':
+                    frame = frame.reformat(resolution[0], resolution[1], 'argb')
+                    frame = frame.to_ndarray()
+                    b,g,r,a = cv2.split(frame)
+                    frame = cv2.merge((a,r,g,b))
+                else:
+                    frame = frame.to_ndarray()
+                self.frames.append(frame)
+            self.total_frames = video_stream.frames
+            self.current_frame = 0
+            self.source_fps =  int(video_stream.average_rate)
             self.target_fps = target_fps
             self.fps_factor = 1 if target_fps is None else int(self.target_fps / self.source_fps)
             self.last_frame = None
@@ -81,8 +96,8 @@ class SingleMediaSource(Source):
         self.blending = blending
 
     def reset(self, products):
-        if self.cap != None:
-            self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        if self.container != None:
+            self.current_frame = 0
             self.count = 0
             self.last_frame = None
 
@@ -91,18 +106,19 @@ class SingleMediaSource(Source):
         Adjusts the frame rate of the video to the desired fps and returns the next frame in the source.
         """
 
-        if self.cap:
+        if self.container:
             if self.count % self.fps_factor != 0:
                 self.count += 1
                 return self.last_frame
 
-            ret, frame = self.cap.read()
+            frame = self.frames[self.current_frame]
+            self.current_frame += 1
 
-            if ret:
+            if self.current_frame > self.total_frames and self.on_end_loop:
+                self.current_frame = 0
+                self.last_frame = self.frames[0]
+            elif self.current_frame <= self.total_frames:
                 self.last_frame = frame
-            elif self.cap.get(cv2.CAP_PROP_FRAME_COUNT) > 1 and self.on_end_loop:
-                self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                _, self.last_frame = self.cap.read()
 
             self.count += 1
             self.last_frame = cv2.resize(self.last_frame, self.resolution)
