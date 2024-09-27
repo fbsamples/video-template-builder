@@ -320,9 +320,6 @@ class Video:
             if alignment[0] == self.HAlignment.RIGHT:
                     valX = self.dimensions[0] - size[0] - valX
 
-        # Clamp values to [0, image size - element size]
-        valX = min(self.dimensions[0] - size[0], max(0, valX))
-
         # Calculate for Vertical Centered (ignores Margins)
         if alignment[1] == self.VAlignment.CENTERED:
             valY = int((self.dimensions[1] - size[1]) / 2)
@@ -336,9 +333,6 @@ class Video:
             # If it's a Bottom Margin, just subtract the margin and size from the total image size
             if alignment[1] == self.VAlignment.BOTTOM:
                     valY = self.dimensions[1] - size[1] - valY
-
-        # Clamp values to [0, image size - element size]
-        valY = min(self.dimensions[1] - size[1], max(0, valY))
 
         return (valX, valY)
 

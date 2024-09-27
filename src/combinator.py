@@ -49,16 +49,41 @@ class MarginCombinator(Source):
         bg_shape = bg_image.shape
         fg_shape = fg_image.shape
 
-        i = self.margin_left
-        j = self.margin_top
+        # Early boundary tests if image is completely out of frame
+        if self.margin_left + fg_shape[0] < 0 or self.margin_left > bg_shape[0] or self.margin_top + fg_shape[1] < 0 or self.margin_top > bg_shape[1]:
+            return bg_image
 
-        if bg_shape[0] < fg_shape[0] + j or bg_shape[1] < fg_shape[1] + i:
-            raise ValueError("Margin would exceed the size of the background image.")
+        xsize = fg_shape[0]
+        ysize = fg_shape[1]
+        ymargin = self.margin_left
+        xmargin = self.margin_top
+        xoffset = 0
+        yoffset = 0
+
+        # Lower than 0 boundary tests
+        if xmargin < 0:
+            xsize += xmargin
+            xoffset = -xmargin
+            xmargin = 0
+        if ymargin < 0:
+            ysize += ymargin
+            yoffset = -ymargin
+            ymargin = 0
+
+        # Bigger than size boundary tests
+        xsize = min(bg_shape[0] - xmargin, xsize)
+        ysize = min(bg_shape[1] - ymargin, ysize)
+
+        bg_start = (xmargin, ymargin)
+        bg_end = (xmargin + xsize, ymargin + ysize)
+        fg_start = (xoffset, yoffset)
+        fg_end = (xoffset + xsize, yoffset + ysize)
 
         if self.blending == Blending.ALPHA:
+            fg_image = fg_image[fg_start[0]:fg_end[0],fg_start[1]:fg_end[1]]
             fg_alpha = fg_image[:,:,3]
 
-            bg = bg_image[j:j+ fg_image.shape[0], i:i+fg_image.shape[1]]
+            bg = bg_image[bg_start[0]:bg_end[0], bg_start[1]:bg_end[1]]
             bg = bg.astype(float)
 
             fg_alpha = fg_alpha.astype(float)/256
@@ -72,7 +97,7 @@ class MarginCombinator(Source):
             fg = fg.astype('uint8')
             bg = bg.astype('uint8')
 
-            bg_image[j:j+ fg_image.shape[0], i:i+fg_image.shape[1]] = cv2.add(bg, fg)
+            bg_image[bg_start[0]:bg_end[0], bg_start[1]:bg_end[1]] = cv2.add(bg, fg)
         elif self.blending == Blending.CHROMA_KEYING:
             hsv = cv2.cvtColor(fg_image, cv2.COLOR_BGR2HSV)
             h,s,v = cv2.split(hsv)
@@ -94,9 +119,9 @@ class MarginCombinator(Source):
             mask = cv2.medianBlur(mask, 5)
             mask = cv2.bitwise_not(mask)
 
-            bg_image[j:j+fg_image.shape[0], i:i+fg_image.shape[1]][mask==255] = fg_image[mask==255]
+            bg_image[bg_start[0]:bg_end[0], bg_start[1]:bg_end[1]][mask==255] = fg_image[fg_start[0]:fg_end[0], fg_start[1]:fg_end[1]][mask==255]
         else:
-            bg_image[j:j+ fg_image.shape[0], i:i+fg_image.shape[1]] = fg_image
+            bg_image[bg_start[0]:bg_end[0], bg_start[1]:bg_end[1]] = fg_image[fg_start[0]:fg_end[0], fg_start[1]:fg_end[1]]
         return bg_image
 
     def next_frame(self):
