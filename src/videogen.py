@@ -165,7 +165,7 @@ class Video:
         print(f"Phase {phase}: Added Product Slideshow.")
 
         dimensions = self._calculateDimensions(dimensions) 
-        source = ImageSlideshowSource(None, dimensions, min_time=duration, on_end_loop=loop)
+        source = ImageSlideshowSource(None, dimensions, min_time=duration, on_end_loop=loop, blending=transparency)
         source = self._parseAndAddEffect(row, source)
         self._addToPhase(phase, source, dimensions, margins, duration, transparency, alignment, loop)
 
