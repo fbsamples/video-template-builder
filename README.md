@@ -1,7 +1,7 @@
 # Video Template Builder
 
 
-This framework allows you to create custom video templates using static images and metadata, making it easier and more efficient to produce video content on a larger scale.
+This framework allows you to create custom video templates using static images and metadata, making it easier and more efficient to produce video content on a larger scale. Doing so can help run optimized campaigns.
 
 ## Design
 
