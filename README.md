@@ -21,6 +21,7 @@ This repository contains files which can be extended for custom implementations.
 
 
 ## Requirements
+First off, smile!!
 
 To ensure a clean workspace and avoid potential conflicts between dependencies, it's highly recommended to use a virtual environment. You can also skip directly to step 3.
 
